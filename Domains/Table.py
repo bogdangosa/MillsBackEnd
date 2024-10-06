@@ -42,7 +42,7 @@ class Table:
     def change_table_element(self,line,column,new_element):
         self.__table[line][column] = new_element
 
-    def is_slot_empty(self,line,column):
+    def is_slot_empty(self,line: int,column: int) -> bool:
         return self.__table[line][column] == constants.EMPTY_SLOT
 
     def get_table_element(self,line,column):
@@ -145,6 +145,110 @@ class Table:
                 position = index1*3+index2
                 list_table.append(element)
         return list_table
+
+    def get_all_possible_positions(self,line,column):
+        positions_list = []
+        for direction in constants.DIRECTIONS_LIST:
+            try:
+                new_line,new_column = self.get_new_available_position(line,column,direction)
+                positions_list.append({
+                    "direction":direction,
+                    "line":new_line,
+                    "column":new_column,
+                })
+            except ValueError as error:
+                pass
+        return positions_list
+
+    def get_all_positions(self,line,column):
+        positions_list = []
+        for direction in constants.DIRECTIONS_LIST:
+            try:
+                new_line,new_column = self.get_new_position(line,column,direction)
+                positions_list.append({
+                    "direction":direction,
+                    "line":new_line,
+                    "column":new_column,
+                })
+            except ValueError as error:
+                pass
+        return positions_list
+
+    def get_table_score_for_ai(self):
+        SCORE_FOR_CLOSED_MILL = 7
+        score = 0
+        for index1, line in enumerate(self.table):
+            player_slots_per_line = 0
+            ai_slots_per_line = 0
+            index_of_empty_slot = -1
+            for index2, slot in enumerate(line):
+                if slot == constants.PLAYER_SLOT:
+                    player_slots_per_line += 1
+                    possible_positions = self.get_all_possible_positions(index1,index2)
+                    score -= len(possible_positions)
+                elif slot == constants.EMPTY_SLOT:
+                    index_of_empty_slot = index2
+                elif slot == constants.AI_SLOT:
+                    ai_slots_per_line += 1
+                    possible_positions = self.get_all_possible_positions(index1,index2)
+                    score += len(possible_positions)
+            if ai_slots_per_line == 3:
+                score += SCORE_FOR_CLOSED_MILL
+            elif ai_slots_per_line == 2 and index_of_empty_slot != -1:
+                score += 3
+                ''' line_of_empty_slot = index_of_empty_slot//3
+                column_of_empty_slot = index_of_empty_slot % 3
+                possible_positions = self.get_all_positions(line_of_empty_slot,column_of_empty_slot)
+                for position in possible_positions:
+                    if self.table[position["line"]][position["column"]] == constants.AI_SLOT:
+                        score += 2
+                        break'''
+            elif player_slots_per_line == 3:
+                score -= SCORE_FOR_CLOSED_MILL
+            elif player_slots_per_line == 2 and index_of_empty_slot != -1:
+                score -= 3
+                '''line_of_empty_slot = index_of_empty_slot//3
+                column_of_empty_slot = index_of_empty_slot % 3
+                possible_positions = self.get_all_positions(line_of_empty_slot,column_of_empty_slot)
+                for position in possible_positions:
+                    if self.table[position["line"]][position["column"]] == constants.PLAYER_SLOT:
+                        score -= 2
+                        break'''
+        for column in constants.COLUMNS:
+            ai_slots_per_line = 0
+            player_slots_per_line = 0
+            line_of_empty_slot = -1
+            column_of_empty_slot = -1
+            for slot_position in column:
+                current_line = slot_position[0]
+                current_column = slot_position[1]
+                slot = self.table[current_line][current_column]
+                if slot == constants.PLAYER_SLOT:
+                    player_slots_per_line += 1
+                elif slot == constants.EMPTY_SLOT:
+                    line_of_empty_slot = current_line
+                    column_of_empty_slot = current_column
+                elif slot == constants.AI_SLOT:
+                    ai_slots_per_line += 1
+            if ai_slots_per_line == 3:
+                score += SCORE_FOR_CLOSED_MILL
+            elif ai_slots_per_line == 2 and line_of_empty_slot != -1:
+                score += 3
+                '''possible_positions = self.get_all_positions(line_of_empty_slot,column_of_empty_slot)
+                for position in possible_positions:
+                    if self.table[position["line"]][position["column"]] == constants.AI_SLOT:
+                        score += 2
+                        break'''
+            elif player_slots_per_line == 3:
+                score -= SCORE_FOR_CLOSED_MILL
+            elif player_slots_per_line == 2 and line_of_empty_slot != -1:
+                '''score -= 3
+                possible_positions = self.get_all_positions(line_of_empty_slot,column_of_empty_slot)
+                for position in possible_positions:
+                    if self.table[position["line"]][position["column"]] == constants.PLAYER_SLOT:
+                        score -= 2
+                        break'''
+        return score
 
     def __str__(self):
         icons_table = self.convert_table_to_icons()

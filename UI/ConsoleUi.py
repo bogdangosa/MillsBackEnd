@@ -6,14 +6,15 @@ from Services.Services import Services
 class ConsoleUi:
 
     def __init__(self):
-        self.services = Services()
+        self.services = Services(constants.PLAYER_VS_AI)
         self.start_menu()
 
     def print_options(self):
         game_state = self.services.get_game_state()
         if game_state == constants.GAME_HASNT_STARTED:
             print("1.Play against easy ai")
-            print("2.Play against medium")
+            print("2.Play against medium ai")
+            print("3.Play against hard ai(minimax)")
             print("0.Exit")
         else:
             print(self.services.get_table())
@@ -62,9 +63,11 @@ class ConsoleUi:
                 print("Bye!")
                 return False
             elif command == 1:
-                self.services.start_game("random_ai")
+                self.services.start_game(constants.RANDOM_AI)
             elif command == 2:
-                self.services.start_game("dumb_ai")
+                self.services.start_game(constants.DUMB_AI)
+            elif command == 3:
+                self.services.start_game(constants.SMART_AI)
         if game_state == constants.FILL_THE_TABLE:
             self.put_pawn_on_the_board()
         if game_state == constants.REMOVE_PIECES:

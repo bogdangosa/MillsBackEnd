@@ -16,6 +16,12 @@ class GameRepository:
     def get_table(self):
         return self.table
 
+    def can_player1_jump(self):
+        return self.game.player1_can_jump
+
+    def can_player2_jump(self):
+        return self.game.player2_can_jump
+
     def get_player1_pawns(self):
         return self.game.get_player1_pawns()
 
@@ -29,22 +35,33 @@ class GameRepository:
         {self.table}
         """
 
-    def get_table_dict(self)->dict:
+    def get_table_dict(self) -> dict:
         return self.table.to_dict()
 
-    def get_table_list(self)->list:
+    def get_table_list(self) -> list:
         return self.table.to_list()
 
     def start_game(self):
         self.game.start_game()
 
-    def add_pawn_to_board(self,line,column,player_slot):
+    def jump_pawn_on_board(self,line,column,new_line,new_column,player_slot,for_ai=False):
+        if self.table.table[line][column] != player_slot:
+            raise ValueError("There isn't your pawn on that position!")
+        if not self.table.is_slot_empty(new_line,new_column):
+            raise ValueError("Not an empty slot")
+        self.table.change_table_element(line,column,constants.EMPTY_SLOT)
+        self.table.change_table_element(new_line,new_column,player_slot)
+        if self.is_moara(new_line, new_column):
+            self.game.game_state = constants.REMOVE_PIECES
+
+    def add_pawn_to_board(self,line,column,player_slot,for_ai=False):
         if not self.table.is_slot_empty(line,column):
             raise ValueError("Not an empty slot")
         self.table.change_table_element(line,column,player_slot)
-        self.game.add_pawn_to_board(player_slot)
-        if self.is_moara(line,column):
-            self.game.game_state = constants.REMOVE_PIECES
+        if not for_ai:
+            self.game.add_pawn_to_board(player_slot)
+            if self.is_moara(line,column):
+                self.game.game_state = constants.REMOVE_PIECES
 
     def is_slot_empty(self,line,column):
         return self.table.is_slot_empty(line,column)
@@ -73,13 +90,15 @@ class GameRepository:
                     return True
         return False
 
-    def remove_pawn(self,line,column,player_slot):
-        if self.table.table[line][column] == player_slot or self.table.is_slot_empty(line,column) or self.is_moara(line,column):
+    def remove_pawn(self,line,column,player_slot,for_ai=False):
+        can_player_jump = self.game.can_opposite_player_jump(player_slot)
+        if self.table.table[line][column] == player_slot or self.table.is_slot_empty(line,column) or (self.is_moara(line,column) and not can_player_jump):
             raise ValueError("Not a valid position to remove!")
         self.table.make_slot_empty(line,column)
-        self.game.remove_pawn_from_board(player_slot)
-        if self.is_game_over():
-            self.game.game_state = constants.GAME_ENDED
+        if not for_ai:
+            self.game.remove_pawn_from_board(player_slot)
+            if self.is_game_over():
+                self.game.game_state = constants.GAME_ENDED
 
     def move_pawn_on_board(self,line,column,direction,player_slot):
         if self.table.table[line][column] != player_slot:

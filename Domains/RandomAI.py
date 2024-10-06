@@ -17,10 +17,10 @@ class RandomAI:
     def __init__(self):
         pass
 
-    def place_pawn_on_board(self, table=None):
+    def place_pawn_on_board(self, table=None,depth=None):
         if table is None:
             table = []
-        return random.randint(0,23)
+        return random.randint(0,23),0
 
     def move_pawn_on_board(self,pawns_positions,table=None):
         random_pawn = random.choice(pawns_positions)

@@ -1,6 +1,7 @@
 import random
 
 from Constants import constants
+from Domains.RandomAI import RandomAI
 from Domains.Table import Table
 
 DIRECTION_OPTIONS = [['r','b'],['l','r','b'],['l','b'],
@@ -13,13 +14,12 @@ DIRECTION_OPTIONS = [['r','b'],['l','r','b'],['l','b'],
                      ['r', 't'], ['l', 'r', 't'], ['l', 't']]
 
 
-class DumbAI:
+class DumbAI(RandomAI):
 
     def __init__(self):
-        pass
+        super().__init__()
 
-    @staticmethod
-    def place_pawn_on_board(table=None):
+    def place_pawn_on_board(self,table=None,depth=None):
         blocking_position = -1
         if table is not None:
             for index1,line in enumerate(table.table):
@@ -35,7 +35,7 @@ class DumbAI:
                         player_slots_per_line += 1
                 if ai_slots_per_line == 2 and index_of_empty_slot != -1:
                     position = index1*3+index_of_empty_slot
-                    return position
+                    return position,0
                 elif player_slots_per_line == 2 and index_of_empty_slot !=-1:
                     blocking_position = index1 * 3 + index_of_empty_slot
 
@@ -56,12 +56,12 @@ class DumbAI:
                         player_slots_per_line += 1
                 if ai_slots_per_line == 2 and line_of_empty_slot != -1:
                     position = line_of_empty_slot * 3 + column_of_empty_slot
-                    return position
+                    return position,0
                 elif player_slots_per_line == 2 and line_of_empty_slot != -1:
                     blocking_position = line_of_empty_slot * 3 + column_of_empty_slot
         if blocking_position != -1:
-            return blocking_position
-        return random.randint(0,23)
+            return blocking_position,0
+        return super().place_pawn_on_board()
 
     def move_pawn_on_board(self,pawns_positions,table=None):
         if table is not None:
@@ -160,10 +160,7 @@ class DumbAI:
                     except ValueError as error:
                         pass
                     # print("blocking position"+str(blocking_position + 1))
-        random_pawn = random.choice(pawns_positions)
-        direction = random.choice(DIRECTION_OPTIONS[random_pawn])
-        # print(str(random_pawn)+direction)
-        return random_pawn,direction
+        return super().move_pawn_on_board(pawns_positions)
 
     def remove_pawn(self,pawns_position,table=None):
         if table is not None:
@@ -198,6 +195,4 @@ class DumbAI:
                 if player_slots_per_line == 2 and was_empty_slot:
                     position =  line_of_player_slot * 3 + column_of_player_slot
                     return position
-
-        random_pawn = random.choice(pawns_position)
-        return random_pawn
+        return super().remove_pawn(pawns_position)

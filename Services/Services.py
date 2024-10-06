@@ -3,18 +3,26 @@ import random
 from Constants import constants
 from Domains.DumbAI import DumbAI
 from Domains.RandomAI import RandomAI
+from Domains.SmartAI import SmartAI
 from Repository.GameRepository import GameRepository
 
 
 class Services:
 
-    def __init__(self):
+    def __init__(self,game_mode):
         self.repository = GameRepository(constants.PLAYER_SLOT,constants.AI_SLOT)
         self.ai = RandomAI()
+        self.__game_mode = game_mode
         pass
 
     def get_game_state(self):
         return self.repository.get_game_state()
+
+    def can_player1_jump(self):
+        return self.repository.can_player1_jump()
+
+    def can_player2_jump(self):
+        return self.repository.can_player2_jump()
 
     def get_table(self):
         return self.repository.get_table_string()
@@ -29,6 +37,8 @@ class Services:
     def start_game(self,selected_ai:int):
         if selected_ai == constants.DUMB_AI:
             self.ai = DumbAI()
+        elif selected_ai == constants.SMART_AI:
+            self.ai = SmartAI(self.repository)
         self.repository.start_game()
 
     @staticmethod
@@ -43,30 +53,28 @@ class Services:
         column = position % 3
         return line,column
 
-    def add_pawn_to_board(self,position: int):
+    def add_pawn_to_board(self,position: int,player_slot=constants.PLAYER_SLOT):
         line,column = Services.from_position_id_to_line_and_column(position)
-        try:
-            self.repository.add_pawn_to_board(line,column,constants.PLAYER_SLOT)
-        except ValueError as error:
-            print(error)
-            return
-        if self.repository.get_game_state() == constants.REMOVE_PIECES:
+        self.repository.add_pawn_to_board(line,column,player_slot,for_ai=False)
+        if self.__game_mode == constants.PLAYER_VS_PLAYER or self.repository.get_game_state() == constants.REMOVE_PIECES:
             return
         self.add_pawn_to_board_ai()
 
     def add_pawn_to_board_ai(self):
-        position_ai = self.ai.place_pawn_on_board(self.repository.get_table())
+        position_ai,score = self.ai.place_pawn_on_board(self.repository.get_table(),depth=constants.AI_DEPTH)
         line,column = Services.from_position_id_to_line_and_column(position_ai)
         while not self.repository.is_slot_empty(line, column):
-            position_ai = self.ai.place_pawn_on_board()
+            position_ai,score = self.ai.place_pawn_on_board()
             line,column = Services.from_position_id_to_line_and_column(position_ai)
-        self.repository.add_pawn_to_board(line, column, constants.AI_SLOT)
+        self.repository.add_pawn_to_board(line, column, constants.AI_SLOT,for_ai=False)
         if self.repository.get_game_state() == constants.REMOVE_PIECES:
             self.remove_pawn_from_board_ai()
 
-    def remove_pawn_from_board(self,position:int):
+    def remove_pawn_from_board(self,position:int,player_slot=constants.PLAYER_SLOT):
         line,column = Services.from_position_id_to_line_and_column(position)
-        self.repository.remove_pawn(line,column,constants.PLAYER_SLOT)
+        self.repository.remove_pawn(line,column,player_slot,for_ai=False)
+        if self.__game_mode == constants.PLAYER_VS_PLAYER:
+            return
         if self.repository.get_game_state() == constants.FILL_THE_TABLE:
             self.add_pawn_to_board_ai()
         elif self.repository.get_game_state() == constants.MOVE_PIECES:
@@ -77,16 +85,24 @@ class Services:
         line = position//3
         column = position % 3
         try:
-            self.repository.remove_pawn(line,column,constants.AI_SLOT)
+            self.repository.remove_pawn(line,column,constants.AI_SLOT,for_ai=False)
         except ValueError as error:
             self.remove_pawn_from_board_ai()
 
-    def move_pawn(self,position:int,direction):
+    def move_pawn(self,position:int,direction,player_slot=constants.PLAYER_SLOT):
         line = position//3
         column = position % 3
-        self.repository.move_pawn_on_board(line,column,direction,constants.PLAYER_SLOT)
-        if self.repository.get_game_state() == constants.REMOVE_PIECES:
+        self.repository.move_pawn_on_board(line,column,direction,player_slot)
+        if self.repository.get_game_state() == constants.REMOVE_PIECES or self.__game_mode == constants.PLAYER_VS_PLAYER:
             return
+        self.move_pawn_ai()
+
+    def jump_pawn(self,position:int,new_position:int,player_slot=constants.PLAYER_SLOT):
+        line, column = Services.from_position_id_to_line_and_column(position)
+        new_line,new_column = Services.from_position_id_to_line_and_column(new_position)
+        self.repository.jump_pawn_on_board(line,column,new_line,new_column,player_slot,for_ai=False)
+        if self.repository.get_game_state() == constants.REMOVE_PIECES or self.__game_mode == constants.PLAYER_VS_PLAYER:
+            return 
         self.move_pawn_ai()
 
     def move_pawn_ai(self):

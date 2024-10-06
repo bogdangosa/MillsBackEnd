@@ -10,9 +10,17 @@ class Game:
         self.player2_pawns = 0
         self.player1_pawns_removed = 0
         self.player2_pawns_removed = 0
+        self.player1_can_jump = False
+        self.player2_can_jump = False
 
     def start_game(self):
         self.game_state = constants.FILL_THE_TABLE
+
+    def can_opposite_player_jump(self,player_slot):
+        if player_slot == self.player1_slot:
+            return self.player2_can_jump
+        elif player_slot == self.player2_slot:
+            return self.player1_can_jump
 
     def get_player1_pawns(self):
         return self.player1_pawns
@@ -36,11 +44,15 @@ class Game:
 
     def remove_pawn_from_board(self,player_slot):
         if player_slot == self.player1_slot:
-            self.player1_pawns_removed += 1
-            self.player1_pawns -= 1
-        if player_slot == self.player2_slot:
             self.player2_pawns_removed += 1
             self.player2_pawns -= 1
+            if self.player2_pawns == 3:
+                self.player2_can_jump = True
+        if player_slot == self.player2_slot:
+            self.player1_pawns_removed += 1
+            self.player1_pawns -= 1
+            if self.player1_pawns == 3:
+                self.player1_can_jump = True
 
         if self.are_all_pieces_on_the_board():
             self.game_state = constants.MOVE_PIECES
